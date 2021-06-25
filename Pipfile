@@ -8,6 +8,9 @@ verify_ssl = true
 [packages]
 earthengine-api = "*"
 opencv-python = "*"
+fpdf2 = "*"
+notebook = "*"
+folium = "*"
 
 [requires]
 python_version = "3.9"
