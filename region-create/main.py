@@ -1,7 +1,7 @@
 """
 Terrascope Cloud
 
-service: region-event
+service: region-create
 runtime: Python 3.9
 environment: Cloud Functions
 
@@ -42,4 +42,3 @@ def main(event, context):
     logmetadata.update({"document-path": regiondoc})
 
     log("NOTICE", f"completed", logmetadata)
-
