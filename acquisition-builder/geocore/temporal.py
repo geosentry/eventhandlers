@@ -1,5 +1,5 @@
 """
-Terrascope GeoCore-Lite Package
+Terrascope GeoCore Package
 """
 import ee
 import typing

@@ -1,9 +1,9 @@
 """
-Terrascope GeoCore-Lite Package
+Terrascope GeoCore Package
 """
 import ee
 import datetime
-from geocorelite import temporal
+from geocore import temporal
 
 def filter_coverage(collection: ee.ImageCollection, geometry: ee.Geometry) -> ee. ImageCollection:
     """
