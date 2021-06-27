@@ -4,13 +4,20 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+geemap = "*"
+notebook = "*"
+folium = "*"
+jupyter = "*"
+ipykernel = "*"
 
 [packages]
 earthengine-api = "*"
 opencv-python = "*"
 fpdf2 = "*"
-notebook = "*"
-folium = "*"
+google-cloud-secret-manager = "*"
+google-cloud-firestore = "*"
+flask = "*"
+flask-restful = "*"
 
 [requires]
 python_version = "3.9"
