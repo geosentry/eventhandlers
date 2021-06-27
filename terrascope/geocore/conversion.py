@@ -1,3 +1,6 @@
+"""
+Terrascope GeoCore Library
+"""
 import os
 import cv2
 

@@ -1,3 +1,7 @@
+"""
+Terrascope GeoCore Library
+"""
+
 S2TC = {'bands': ['TCI_R', 'TCI_G', 'TCI_B'], 'min': 0, 'max': 255}
 
 NDVIRAW = {'min': 0.0, 'max': 1.0, 'palette': ['FFFFFF', 'CE7E45', 'DF923D', 'F1B555', 'FCD163', '99B718',

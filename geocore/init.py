@@ -1,3 +1,0 @@
-"""
-terrascope GeoCore Package
-"""
