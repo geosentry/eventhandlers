@@ -28,7 +28,7 @@ def log(severity: str, message: str, metadata: dict):
 
 
 def main(event, context):
-    """ Runtime Entrypoint """
+    """ Cloud Functions Entrypoint """
     logmetadata = {"service": "region-create", "event": event}
 
     try:
