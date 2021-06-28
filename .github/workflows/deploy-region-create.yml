@@ -4,7 +4,7 @@ name: Deploy region-create service to Cloud Functions
 on:
   push:
     paths:
-      -'region-create/'
+      -'region-create/*'
   workflow_dispatch:
 
 # Define the deployment variables
