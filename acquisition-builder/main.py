@@ -101,14 +101,14 @@ def main(event, context):
         return "error-acknowledge", 200
 
     try:
-        geometry = geocore.acquisition.generate_geometry(geojson)
+        geometry = geocore.spatial.generate_geometry(geojson)
 
         acqdate = docdata.get("next_acquisition")
         if not acqdate:
             acqdate = geocore.acquisition.generate_latest_date()
 
-        latest_acq = geocore.acquisition.generate_latest_acquisition(acqdate, geometry)
-        imageid = geocore.tools.generate_image_identifier(latest_acq)
+        latest_acq = geocore.acquisition.generate_latest_image(acqdate, geometry)
+        imageid = geocore.acquisition.generate_image_identifier(latest_acq)
 
     except Exception as e:
         log("ALERT", f"failed to find latest acquisition for the region. {e}.", logmetadata)
