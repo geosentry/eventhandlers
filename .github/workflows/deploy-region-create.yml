@@ -1,0 +1,35 @@
+name: Build and Deply the region-create service to Cloud Functions
+
+# Worklfow triggered on push to region-create directory and by manual dispatch
+on:
+  push:
+    paths:
+      -'region-create/**'
+  workflow_dispatch:
+
+# Define the deployment variables
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+  SERVICE: region-create
+  REGION: asia-south1
+  SACCOUNT: ${{ secrets.GCP_SA_EVENTHANDLER }}
+  EVENT: providers/cloud.firestore/eventTypes/document.create
+  RESOURCE: projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{regionID}
+  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Deploy to Cloud Functions
+        working-directory: ./region-create
+        run: |
+          gcloud deploy ${{ env.SERVICE }} \
+            --region ${{ env.REGION }} \
+            --entry-point main \
+            --service-account ${{ env.SACCOUNT }} \
+            --runtime python39 \
+            --trigger-event ${{ env.EVENT }} \
+            --trigger-resource ${{ env.RESOURCE }}
