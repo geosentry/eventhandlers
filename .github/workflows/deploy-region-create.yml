@@ -13,8 +13,8 @@ env:
   SERVICE: region-create
   REGION: asia-south1
   SACCOUNT: ${{ secrets.GCP_SA_EVENTHANDLER }}
-  EVENT: "providers/cloud.firestore/eventTypes/document.create"
-  RESOURCE: "projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{regionID}"
+  EVENT: providers/cloud.firestore/eventTypes/document.create
+  RESOURCE: projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{regionID}
   
 jobs:
   deploy:
@@ -31,5 +31,5 @@ jobs:
             --entry-point main \
             --service-account ${{ env.SACCOUNT }} \
             --runtime python39 \
-            --trigger-event ${{ env.EVENT }} \
-            --trigger-resource ${{ env.RESOURCE }}
+            --trigger-event "${{ env.EVENT }}" \
+            --trigger-resource "${{ env.RESOURCE }}"
