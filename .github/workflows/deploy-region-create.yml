@@ -1,5 +1,12 @@
 name: Deploy region-create service to Cloud Functions
 
+# Worklfow triggered on push to region-create directory and by manual dispatch
+on:
+  push:
+    paths:
+      - 'region-create/**'
+  workflow_dispatch:
+
 # Define the deployment variables
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
@@ -8,14 +15,7 @@ env:
   SACCOUNT: ${{ secrets.GCP_SA_EVENTHANDLER }}
   EVENT: providers/cloud.firestore/eventTypes/document.create
   RESOURCE: projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{regionID}
-
-# Worklfow triggered on push to region-create directory and by manual dispatch
-on:
-  push:
-    paths:
-      - '{{ env.SERVICE }}/**'
-  workflow_dispatch:
-
+  
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -30,7 +30,7 @@ jobs:
           service_account_key: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Deploy to Cloud Functions
-        working-directory: ./{{ env.SERVICE }}
+        working-directory: ./region-create
         run: |
           gcloud functions deploy ${{ env.SERVICE }} \
             --region ${{ env.REGION }} \
