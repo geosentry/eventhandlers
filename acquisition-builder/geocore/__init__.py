@@ -4,6 +4,11 @@ Terrascope GeoCore Package
 import ee
 import google.cloud.secretmanager as secretmanager
 
+from geocore import tools
+from geocore import pallete
+from geocore import temporal
+from geocore import acquisition
+
 def initialize(project: str):
     """
     A function that initializes an Earth Engine session with a Service Account Agent.

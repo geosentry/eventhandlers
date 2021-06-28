@@ -3,7 +3,6 @@ Terrascope GeoCore Package
 """
 import ee
 import datetime
-from geocore import temporal
 
 def filter_coverage(collection: ee.ImageCollection, geometry: ee.Geometry) -> ee. ImageCollection:
     """
@@ -32,6 +31,8 @@ def generate_latest_date(geometry: ee.Geometry) -> datetime.dateime:
     A function that returns a datetime object that represents date of the latest 
     available Sentinel-2 L2A acquisition for the given Earth Engine Geometry.
     """
+    from geocore import temporal
+
     # Generate daterange spanning a week prior to the current date
     today = datetime.datetime.utcnow()
     weekrange = temporal.generate_daterange(date=today, days=7)
@@ -55,6 +56,8 @@ def generate_latest_image(date: datetime.datetime, geometry: ee.Geometry) -> ee.
     The buffered date range is used to filter Images which are then tested for geometry
     coverage to ensure that the Image fully cover the given Geometry.
     """
+    from geocore import temporal
+
     # Generate a daterange spanning a 1 day before and after the given date
     daybuffer = temporal.generate_datebuffer(date=date, buffer=1)
 

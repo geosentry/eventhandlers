@@ -7,6 +7,7 @@ import cv2
 import json
 
 def convert_GeoTIFF_TO_JPEG(geotiffpath: str, jpegpath: str):
+    """ doc """
     if not geotiffpath.endswith(".tif"):
         raise ValueError("Invalid path to GeoTIFF file. Must end with '.tif' extension.")
 
@@ -21,12 +22,12 @@ def convert_GeoTIFF_TO_JPEG(geotiffpath: str, jpegpath: str):
     return
 
 def generate_geometry(geojson: str) -> ee.Geometry:
-    """ """
+    """ doc """
     geodata = json.loads(geojson)
     coordinates = geodata['features'][0]['geometry']['coordinates'][0]
     geometry = ee.Geometry.Polygon(coordinates)
     return geometry
 
 def generate_image_identifier(image: ee.Image) -> str:
-    """"""
+    """ doc """
     return f"COPERNICUS/S2_SR/{image.id().getInfo()}"
