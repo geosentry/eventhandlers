@@ -1,4 +1,4 @@
-name: Build and Deply the region-create service to Cloud Functions
+name: Deploy region-create service to Cloud Functions
 
 # Worklfow triggered on push to region-create directory and by manual dispatch
 on:
