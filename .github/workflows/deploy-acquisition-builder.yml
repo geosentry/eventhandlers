@@ -1,12 +1,5 @@
 name: Deploy acquisition-builder service to Cloud Functions
 
-# Worklfow triggered on push to acquisition-builder directory and by manual dispatch
-on:
-  push:
-    paths:
-      - 'acquisition-builder/**'
-  workflow_dispatch:
-
 # Define the deployment variables
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
@@ -14,7 +7,14 @@ env:
   REGION: asia-south1
   SACCOUNT: ${{ secrets.GCP_SA_EVENTHANDLER }}
   TOPIC: acquisition-builds
-  
+
+# Worklfow triggered on push to acquisition-builder directory and by manual dispatch
+on:
+  push:
+    paths:
+      - '{{ env.SERVICE }}/**'
+  workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -29,7 +29,7 @@ jobs:
           service_account_key: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Deploy to Cloud Functions
-        working-directory: ./region-create
+        working-directory: ./{{ env.SERVICE }}
         run: |
           gcloud functions deploy ${{ env.SERVICE }} \
             --region ${{ env.REGION }} \
