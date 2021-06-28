@@ -7,6 +7,7 @@ import google.cloud.secretmanager as secretmanager
 from geocore import tools
 from geocore import pallete
 from geocore import temporal
+from geocore import spatial
 from geocore import acquisition
 
 def initialize(project: str):

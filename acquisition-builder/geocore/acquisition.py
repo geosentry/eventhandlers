@@ -4,27 +4,13 @@ Terrascope GeoCore Package
 import ee
 import datetime
 
-def filter_coverage(collection: ee.ImageCollection, geometry: ee.Geometry) -> ee. ImageCollection:
+def generate_image_identifier(image: ee.Image) -> str:
+    """ 
+    A function that returns the identifer for the given Earth Engine Image.
+    The function assumes the Image is a Sentinel-2 L2A Image.
     """
-    A function that returns an Earth Engine ImageCollection that has been filtered such that every 
-    Image in a given ImageCollection has full coverage for a given Earth Engine Geometry.
-
-    This coverage filter is performed by assigning a coverage value to each image 
-    which is value between 0-100 that represents the percentage of geometry coverage 
-    in that image. The collection is then filtered based on this value.
-    """
-    # Assign a coverage value to each Image in the ImageCollection
-    collection = collection.map(lambda image: image.set({
-        "coverage": ee.Number.expression("100-(((expected-actual)/expected)*100)", {
-            "expected": geometry.area(5), 
-            "actual": image.clip(geometry).geometry().area(5)
-        })
-    }))
-
-    # Filter the collection to only have Images with 100% coverage
-    collection = collection.filter(ee.Filter.eq("coverage", 100))
-    # Return the filtered collection
-    return collection
+    # Construct and return the image identifier
+    return f"COPERNICUS/S2_SR/{image.id().getInfo()}"
 
 def generate_latest_date(geometry: ee.Geometry) -> datetime.dateime:
     """
@@ -57,6 +43,7 @@ def generate_latest_image(date: datetime.datetime, geometry: ee.Geometry) -> ee.
     coverage to ensure that the Image fully cover the given Geometry.
     """
     from geocore import temporal
+    from geocore import spatial
 
     # Generate a daterange spanning a 1 day before and after the given date
     daybuffer = temporal.generate_datebuffer(date=date, buffer=1)
@@ -67,6 +54,6 @@ def generate_latest_image(date: datetime.datetime, geometry: ee.Geometry) -> ee.
     collection = collection.filterBounds(geometry).filterDate(*daybuffer)
 
     # Filter the ImageCollection based on geometry coverage
-    filtered_collection = filter_coverage(collection, geometry)
+    filtered_collection = spatial.filter_coverage(collection, geometry)
     # Return the first Image from the filtered ImageCollection
     return filtered_collection.first()

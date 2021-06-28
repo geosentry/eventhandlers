@@ -94,7 +94,7 @@ def main(event, context):
             return "termination-acknowledge", 200
 
     except KeyError as e:
-        log("CRITICAL", f"failed to read region document data. missing key '{e}'")
+        log("CRITICAL", f"failed to read region document data. missing key {e}")
         return "error-acknowledge", 200
     except Exception as e:
         log("ALERT", f"failed to read region document data. {e}.", logmetadata)
