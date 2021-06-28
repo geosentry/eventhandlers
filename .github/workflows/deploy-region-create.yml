@@ -26,7 +26,7 @@ jobs:
       - name: Deploy to Cloud Functions
         working-directory: ./region-create
         run: |
-          gcloud deploy ${{ env.SERVICE }} \
+          gcloud functions deploy ${{ env.SERVICE }} \
             --region ${{ env.REGION }} \
             --entry-point main \
             --service-account ${{ env.SACCOUNT }} \
