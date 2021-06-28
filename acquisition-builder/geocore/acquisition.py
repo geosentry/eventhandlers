@@ -12,7 +12,7 @@ def generate_image_identifier(image: ee.Image) -> str:
     # Construct and return the image identifier
     return f"COPERNICUS/S2_SR/{image.id().getInfo()}"
 
-def generate_latest_date(geometry: ee.Geometry) -> datetime.dateime:
+def generate_latest_date(geometry: ee.Geometry) -> datetime.datetime:
     """
     A function that returns a datetime object that represents date of the latest 
     available Sentinel-2 L2A acquisition for the given Earth Engine Geometry.
@@ -52,8 +52,13 @@ def generate_latest_image(date: datetime.datetime, geometry: ee.Geometry) -> ee.
     collection = ee.ImageCollection("COPERNICUS/S2_SR")
     # Filter the ImageCollection for the given geometry and the daybuffer
     collection = collection.filterBounds(geometry).filterDate(*daybuffer)
+    
+    # Check if there are any acquisitions in the time period
+    if collection.size().getInfo() == 0:
+        return None
 
     # Filter the ImageCollection based on geometry coverage
     filtered_collection = spatial.filter_coverage(collection, geometry)
+
     # Return the first Image from the filtered ImageCollection
     return filtered_collection.first()

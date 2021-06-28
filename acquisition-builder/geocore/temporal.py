@@ -4,10 +4,19 @@ Terrascope GeoCore Package
 import ee
 import typing
 import datetime
+from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 
 def generate_date_timestamp(posixstamp: int) -> datetime.datetime:
     """ A function that returns a datetime object for a given POSIX timestamp. """
     return datetime.datetime.utcfromtimestamp(int(posixstamp/1000))
+
+def generate_date_googledate(date: DatetimeWithNanoseconds) -> datetime.datetime:
+    """ A function that returns a datetime object for a given DatetimeWithNanoseconds object. """
+    return datetime.datetime.fromisoformat(date.isoformat()).replace(tzinfo=None)
+
+def generate_googledate_date(date: datetime.datetime) -> DatetimeWithNanoseconds:
+    """ A function that returns a DatetimeWithNanoseconds object for a given datetime object. """
+    return DatetimeWithNanoseconds.fromisoformat(date.isoformat())
 
 def generate_date_nextacquisition(date: datetime.datetime) -> datetime.datetime:
     """ A function that returns a datetime object for the next acquisition given another acquisition date. """

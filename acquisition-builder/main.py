@@ -15,7 +15,6 @@ import json
 import base64
 import geocore
 import google.cloud.firestore as firestore
-from google.api_core.datetime_helpers import DatetimeWithNanoseconds
 
 
 def log(severity: str, message: str, metadata: dict):
@@ -58,7 +57,7 @@ def parse_pubsub_event(event: dict):
 
 def main(event, context):
     """ Cloud Functions Entrypoint """
-    logmetadata = {"service": "acquisition-builder", "event": event}
+    logmetadata = {"service": "acquisition-builder"}
 
     try:
         docpath, _ = parse_pubsub_event(event)
@@ -102,12 +101,19 @@ def main(event, context):
 
     try:
         geometry = geocore.spatial.generate_geometry(geojson)
-
         acqdate = docdata.get("next_acquisition")
+
         if not acqdate:
-            acqdate = geocore.acquisition.generate_latest_date()
+            acqdate = geocore.acquisition.generate_latest_date(geometry)
+        else:
+            acqdate = geocore.temporal.generate_date_googledate(acqdate)
 
         latest_acq = geocore.acquisition.generate_latest_image(acqdate, geometry)
+
+        if not latest_acq:
+            log("INFO", "region has no available acquisitions", logmetadata)
+            return "termination-acknowledge", 200
+
         imageid = geocore.acquisition.generate_image_identifier(latest_acq)
 
     except Exception as e:
@@ -115,13 +121,10 @@ def main(event, context):
         return "error-acknowledge", 200
 
     try:
-        newlast = DatetimeWithNanoseconds.fromisoformat(acqdate.isoformat())
-        newnext = geocore.temporal.generate_date_nextacquisition(acqdate)
-        newnext = DatetimeWithNanoseconds.fromisoformat(newnext.isoformat())
-
+        nextacq = geocore.temporal.generate_date_nextacquisition(acqdate)
         docref.set({
-            "next_acquisition": newnext,
-            "last_acquisition": newlast,
+            "next_acquisition": geocore.temporal.generate_googledate_date(nextacq),
+            "last_acquisition": geocore.temporal.generate_googledate_date(acqdate),
             "temp_imageid": imageid,
         }, merge=True)
 
