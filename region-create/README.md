@@ -1,5 +1,13 @@
 # region-create
-- Status: Complete
-- This cloud function is responsible for handling creation events for documents in the **'regions'** collection of the Firestore Database
-- Responsible for sending a pubsub trigger to the **email-builder** for the 'new-region' runtime.
-- Responsible for sending a pubsub trigger to the **acquisition-builder** runtime.
+Cloud Function Event Handler
+
+## Status
+**Hosted: True**  
+**Development: Complete**  
+
+## Functionality
+- Triggered on creation of a document in the **regions** collection of Firestore
+- Actions:
+    - Collects the path of the document that was creates
+    - Publishes the message (document path) to the **email-builds** PubSub topic with the 'runtime' attribute set to *new-region*
+    - Publishes the message (document path) to the **acquisition-builds** PubSub topic

@@ -8,6 +8,8 @@ function: region-create
 runtime: python39
 trigger-event: providers/cloud.firestore/eventTypes/document.create 
 trigger-resource: projects/{projectID}/databases/(default)/documents/regions/{regionID}
+service-account permissions:
+- Pub/Sub Publisher
 """
 import json
 import google.cloud.pubsub
