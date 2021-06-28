@@ -29,7 +29,7 @@ jobs:
           service_account_key: ${{ secrets.GCP_CREDENTIALS }}
 
       - name: Deploy to Cloud Functions
-        working-directory: ./region-create
+        working-directory: ./acquisition-builder
         run: |
           gcloud functions deploy ${{ env.SERVICE }} \
             --region ${{ env.REGION }} \
