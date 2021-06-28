@@ -16,6 +16,7 @@ opencv-python = "*"
 fpdf2 = "*"
 google-cloud-secret-manager = "*"
 google-cloud-firestore = "*"
+google-cloud-pubsub = "*"
 flask = "*"
 flask-restful = "*"
 
