@@ -5,11 +5,8 @@ Google Cloud Platform - Cloud Functions
 
 asset-create service
 """
-import os
-import cv2
 import json
-from google.cloud import storage
-from google.cloud import firestore
+import assethandler
 
 servicename = "asset-create"
 
@@ -25,23 +22,58 @@ def log(severity: str, message: str, trace: list):
     logentry = dict(severity=severity, message=message, trace=trace, service=servicename)
     print(json.dumps(logentry))
 
+def handle_png(filename: str, logtraces: list):
+    from google.cloud import firestore
 
-def convert(filepath: str, outputname: str) -> bool:
-    """ doc """
-    if not os.path.isfile(filepath):
-        raise FileNotFoundError
+    logtraces.append("started PNG asset handler")
 
-    imagedata = cv2.imread(filepath)
+    try:
+        docpath = assethandler.pnglib.generate_assetdoc(filename)
+        logtraces.append(f"asset document path generated. docpath - {docpath}")
 
-    if outputname.endswith(".png"):
-        cv2.imwrite(outputname, imagedata, [cv2.IMWRITE_PNG_COMPRESSION, 0])
-        return True
+        db = firestore.Client()
+        logtraces.append(f"firestore client initialized")
 
-    elif outputname.endswith(".jpg"):
-        cv2.imwrite(outputname, imagedata, [cv2.IMWRITE_JPEG_QUALITY, 200])
-        return True
+        docref = db.document(docpath)
+        docsnap = docref.get()
 
-    return False
+        if not docsnap.exists:
+            logtraces.append(f"execution broke - could not find asset document on database.")
+            return "CRITICAL", "runtime error.", "error-acknowledge", logtraces
+            
+    except NameError as e:
+        logtraces.append(f"execution broke - could not generate asset document path from filename. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+
+    except TypeError as e:
+        logtraces.append(f"execution terminated - triggered by unsupported asset type - {e}")
+        return "INFO", "runtime terminated.", "termination-acknowledge", logtraces
+
+    except Exception as e:
+        logtraces.append(f"execution broke - could not initialize firestore client. {e}")
+        return "ALERT", "system error.", "error-acknowledge", logtraces
+
+    logtraces.append(f"asset document path valudated.")
+
+    try:
+        assetid = assethandler.pnglib.generate_assetid(filename)
+        
+        #TODO - define asset path and check update runtime
+        docref.set({f"assets.path.{assetid}": filename}, merge=True)
+
+    except NameError as e:
+        logtraces.append(f"execution broke - could not generate asset ID from filename. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        
+    except Exception as e:
+        logtraces.append(f"execution broke - could not update asset document. {e}")
+        return "ALERT", "system error.", "error-acknowledge", logtraces
+    
+    logtraces.append(f"asset document updated")
+
+    # check if all document assets have been generated.
+    # send pubsub trigger to pdf-builds if true
+
 
 def main(event, context):
     """ Cloud Functions Entrypoint """
@@ -52,139 +84,35 @@ def main(event, context):
         filename = event["name"]
         contenttype = event["contentType"]
 
-        logtraces.append(f"event data read. bucket - {bucket}. filename - {filename}. contenttype - {contenttype}")
-        
-        if contenttype != "image/tiff":
-            logtraces.append("execution terminated - triggered by non GeoTIFF object.")
-            log("INFO", "runtime complete.", logtraces)
-            return "termination-acknowledge", 200
-
-        logtraces.append("content type checked.")
-
+        logtraces.append(f"event data read. bucket - {bucket}. filename - {filename}.")
+    
     except KeyError as e:
         logtraces.append(f"execution broke - could not read event data. missing key {e}")
         log("EMERGENCY", f"system error.", logtraces)
         return "error-acknowledge", 200
 
-    except Exception as e:
-        logtraces.append(f"execution broke - could not read event data. {e}")
-        log("ERROR", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
     try:
-        pieces = filename.split("/")
-        assettype = pieces[0]
+        if contenttype == "image/tiff":
+            severity, message, response, logtraces = assethandler.tiflib.handle_geotiff(filename, bucket, logtraces)
 
-        if assettype == "regions":
-            assetpath = f"{pieces[1]}-{pieces[2]}"
-            assetname = pieces[3].split(".")[0]
-            assetdoc = f"regions/{pieces[1]}/acquisitions/{pieces[2]}"
+            logtraces.append("execution complete")
+            log(severity, message, logtraces)
+            return response, 200
 
-        elif assettype == "visuals":
-            assetpath = pieces[1]
-            assetname = pieces[2].split(".")[0]
-            assetdoc = f"visuals/{pieces[1]}"
-
-        else: 
-            logtraces.append(f"execution terminated - triggered by unsupported asset type {assettype}.")
-            log("INFO", "runtime complete.", logtraces)
+        elif contenttype == "image/png":
+            return "", 200
+        
+        else:
+            logtraces.append(f"execution terminated - triggered by unsupported object of type - {contenttype}.")
+            log("INFO", "runtime terminated.", logtraces)
             return "termination-acknowledge", 200
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not deconstruct object filename. {e}")
+        logtraces.append(f"execution broke - could not run {contenttype} runtime. {e}")
         log("ERROR", f"runtime error.", logtraces)
         return "error-acknowledge", 200
 
-    logtraces.append("filename deconstructed.")
 
-    try:
-        storage_client = storage.Client()
-        bucket_handler = storage_client.bucket(bucket)
-
-    except Exception as e:
-        logtraces.append(f"execution broke - could not initialize storage client and bucket handler. {e}")
-        log("ALERT", f"system error.", logtraces)
-        return "error-acknowledge", 200
-
-    logtraces.append("storage client and bucket handler initialized.")
-    
-    try:
-        tmpdir = "./tmp"
-        tmpfile = f"{tmpdir}/{assetpath}-{assetname}"
-
-        tifblob = bucket_handler.blob(filename)
-        tifblob.download_to_filename(f"{tmpfile}.tiff")
-
-    except Exception as e:
-        logtraces.append(f"execution broke - could not download GeoTIFF blob. {e}")
-        log("ERROR", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
-    logtraces.append("GeoTIFF blob downloaded.")
-
-    try:
-        convert(f"{tmpfile}.tiff", f"{tmpfile}.png")
-
-    except Exception as e:
-        logtraces.append(f"execution broke - could not convert GeoTIFF to PNG. {e}")
-        log("ERROR", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
-    logtraces.append("GeoTIFF converted to a PNG.")
-
-    try:
-        outname = filename.split(".")[0] + ".png"
-
-        pngblob = bucket_handler.blob(outname)
-        pngblob.upload_from_filename(f"{tmpfile}.png")
-
-    except Exception as e:
-        logtraces.append(f"execution broke - could not upload PNG blob. {e}")
-        log("ERROR", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
-    logtraces.append("PNG blob uploaded.")
-
-    try:
-        tifblob.delete()
-        logtraces.append("GeoTIFF blob deleted.")
-
-    except Exception as e:
-        logtraces.append(f"execution broke - could not delete GeoTIFF blob. {e}")
-        log("ERROR", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
-    try:
-        db = firestore.Client()
-        
-    except Exception as e:
-        logtraces.append(f"execution broke - could not initialize firestore client. {e}")
-        log("ALERT", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
-    logtraces.append("firestore client initialized.")
-
-    try:
-        # acqdoc update runtime
-        # if 
-
-        docref = db.document(assetdoc)
-        docsnap = docref.get()
-
-        print(docsnap.exists)
-
-
-    except Exception as e:
-        logtraces.append(f"execution broke - could not initialize firestore client. {e}")
-        log("ALERT", f"runtime error.", logtraces)
-        return "error-acknowledge", 200
-
-
-
-
-
-    log("INFO", f"runtime complete.", logtraces)
-    return "termination-acknowledge", 200
 
 if __name__ == "__main__":
     event = {
