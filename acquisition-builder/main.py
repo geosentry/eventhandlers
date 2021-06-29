@@ -11,11 +11,11 @@ service-account permissions:
 - Secret Accesor
 - Cloud Datastore User
 """
+import ee
 import json
 import base64
 import geocore
 import google.cloud.firestore as firestore
-
 
 def log(severity: str, message: str, metadata: dict):
     """
@@ -54,6 +54,7 @@ def parse_pubsub_event(event: dict):
         raise UnicodeError(f"event data could not be decoded as a base64 string - {e}")
 
     return data, attributes
+
 
 def main(event, context):
     """ Cloud Functions Entrypoint """
@@ -108,13 +109,13 @@ def main(event, context):
         else:
             acqdate = geocore.temporal.generate_date_googledate(acqdate)
 
-        latest_acq = geocore.acquisition.generate_latest_image(acqdate, geometry)
+        acqimage = geocore.acquisition.generate_latest_image(acqdate, geometry)
 
-        if not latest_acq:
+        if not acqimage:
             log("INFO", "region has no available acquisitions", logmetadata)
             return "termination-acknowledge", 200
 
-        imageid = geocore.acquisition.generate_image_identifier(latest_acq)
+        acqimageid = geocore.acquisition.generate_image_identifier(acqimage)
 
     except Exception as e:
         log("ALERT", f"failed to find latest acquisition for the region. {e}.", logmetadata)
@@ -125,12 +126,70 @@ def main(event, context):
         docref.set({
             "next_acquisition": geocore.temporal.generate_googledate_date(nextacq),
             "last_acquisition": geocore.temporal.generate_googledate_date(acqdate),
-            "temp_imageid": imageid,
         }, merge=True)
 
     except Exception as e:
-        log("ALERT", f"failed to update the acquisition document. {e}.", logmetadata)
+        log("ALERT", f"failed to update the region document. {e}.", logmetadata)
         return "error-acknowledge", 200
 
+    # CLOUD PROBABILITY DETECTION RUNTIME
+
+    try:
+        tcimage = geocore.spectral.generate_TrueColor(acqimage).clip(geometry)
+        ndviimage = geocore.spectral.generate_NDVI(acqimage).clip(geometry)
+
+    except Exception as e:
+        log("ALERT", f"failed to generate acquisition asset images. {e}.", logmetadata)
+        return "error-acknowledge", 200
+
+    try:
+        acqID = acqdate.isoformat().split("T")[0]
+        assets = ["truecolor", "ndvi"]
+        assetpaths = {key: f"{docpath}/{acqID}/{key}" for key in assets}
+
+        # export runtime (temporary) - needs to accomodate a variable number of generations
+        tcexport = geocore.export.export_image_asset(tcimage, geometry, assetpaths["truecolor"])
+        tcexport.start()
+
+        ndviexport = geocore.export.export_image_asset(ndviimage, geometry, assetpaths["ndvi"])
+        ndviexport.start()
+
+    except ee.EEException as e:
+        log("ALERT", f"failed to export acquisition asset images. earth engine error. {e}.", logmetadata)
+        return "error-acknowledge", 200
+    except Exception as e:
+        log("ALERT", f"failed to export acquisition asset images. runtime error. {e}.", logmetadata)
+        return "error-acknowledge", 200
+
+    try:
+        acqdoc = docref.collection("acquisitions").document(acqID)
+        acqdoc.set({
+            "image": acqimageid,
+            "timestamp": geocore.temporal.generate_googledate_date(acqdate),
+            "subscription": "farm-analytics",
+            "asset": {
+                "bucket": "terrascope-assets",
+                "completion": {key: False for key in assets},
+                "path": assetpaths
+            },
+            "report": {
+                "bucket": "terrascope-reports",
+                "completion": False,
+                "path": "regions/regid/acqid.pdf"
+            }            
+        })
+
+    except Exception as e:
+        log("ALERT", f"failed to create acquisition document. {e}.", logmetadata)
+        return "error-acknowledge", 200
+    
     log("INFO", f"completed acquisition-builder runtime.", logmetadata)
     return "success-acknowledge", 200
+
+if __name__ == "__main__":
+    event = {
+        "data": base64.b64encode("regions/testreg".encode("utf-8")),
+        "attributes": {}
+    }
+
+    main(event, 0)
