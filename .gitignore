@@ -141,3 +141,7 @@ tmp/
 # Devlopment
 testbench/
 keys/
+
+# Pipfiles
+**/Pipfile
+**/Pipfile.lock
