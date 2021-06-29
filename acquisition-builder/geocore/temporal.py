@@ -1,5 +1,7 @@
 """
 Terrascope GeoCore Package
+
+The temporal package contains functions for temporal manipulations
 """
 import ee
 import typing

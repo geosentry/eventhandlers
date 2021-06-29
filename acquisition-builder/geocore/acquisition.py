@@ -1,5 +1,8 @@
 """
 Terrascope GeoCore Package
+
+The acquisition module contains functions required 
+to find the latest acquisition image for a region.
 """
 import ee
 import datetime
@@ -52,7 +55,7 @@ def generate_latest_image(date: datetime.datetime, geometry: ee.Geometry) -> ee.
     collection = ee.ImageCollection("COPERNICUS/S2_SR")
     # Filter the ImageCollection for the given geometry and the daybuffer
     collection = collection.filterBounds(geometry).filterDate(*daybuffer)
-    
+
     # Check if there are any acquisitions in the time period
     if collection.size().getInfo() == 0:
         return None

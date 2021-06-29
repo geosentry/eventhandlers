@@ -1,5 +1,7 @@
 """
 Terrascope GeoCore Library
+
+The pallete module contains visualization parameters
 """
 
 S2TC = {'bands': ['TCI_R', 'TCI_G', 'TCI_B'], 'min': 0, 'max': 255}

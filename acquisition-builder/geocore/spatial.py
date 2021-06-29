@@ -1,7 +1,9 @@
 """
 Terrascope GeoCore Package
+
+The spatial module contains function required 
+for geometrical and spatial manipulations.
 """
-from json.decoder import JSONDecodeError
 import ee
 import json
 
@@ -13,7 +15,7 @@ def generate_geometry(geojson: str) -> ee.Geometry:
 
     except KeyError as e:
         raise RuntimeError(f"corrupt geojson. missing key {e}")
-    except JSONDecodeError as e:
+    except json.JSONDecodeError as e:
         raise RuntimeError(f"could not parse geojson. {e}")
 
     try:
