@@ -14,15 +14,24 @@ Default Credentials
 - **Cloud Datastore User** (Firestore)
 - **Pub/Sub Publisher** (Cloud PubSub)
 
-
 ### Function Flow
-1.
-2. 
+1. Obtain the bucket name, file name and the content type from the event dictionary.
+2. Check the content type and start the appropriate runtime for either PNG or GeoTIFF assets. Function terminates for any other content type.
 
-todo
-- This cloud function is responsible for handling object creation events for the **terrascope-assets** Cloud Storage Buckets.
-- Responsible for updating the corresponding acquisition documents on the Firestore DB as thier assets appear in the Bucket.
-- Responsible for sending a pubsub trigger to the **pdf-builder** runtime when all the assets for the acqusition document have appeared.
+GeoTIFF Runtime
+1. Initialize the Storage Client and Bucket Handler.
+2. Download the GeoTIFF Image Blob from the Cloud Storage Bucket.
+3. Convert the GeoTIFF into a PNG.
+4. Upload the PNG to the Cloud Storage Bucket.
+5. Delete the GeoTIFF blob from the Cloud Storage Bucket.
+
+PNG Runtime
+1. Initialize Firestore Client.
+2. Generate the path to the corresponding document from the asset filename.
+3. Update the asset document with the path to the file in the Bucket.
+4. Check if the asset document contains paths to all its assets.
+    - If all assets have appeared, send a PubSub message to the **pdf-builds** PubSub topic with appropriate runtime attribute based on the type of asset document.
+    - Otherwise, end the function execution.
 
 ### Deployment
 All pushes to this directory automatically trigger a workflow to deploy the Cloud Function to a GCP Project.   
@@ -35,6 +44,7 @@ gcloud functions deploy asset-create \
 --entry-point main \
 --service-account $SAEMAIL \
 --runtime python39 \
---trigger-event google.storage.object.finalize
+--memory 512MB \
+--trigger-event google.storage.object.finalize \
 --trigger-resource terrascope-assets
 ```
