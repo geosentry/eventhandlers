@@ -3,9 +3,6 @@ Terrascope AssetHandler Package
 
 The tiflib module contains functions to handle GeoTIFF assets triggers
 """
-import os
-import cv2
-from google.cloud import storage
 
 def generate_assetname(filename: str) -> str:
     """ A function that returns an asset name for a given filename. """
@@ -29,25 +26,32 @@ def convert(filepath: str, outputpath: str):
     PNG conversion is done with zero compression.
     JPEG conversion is done with a quality value of 200.
     """
+    import os
+    from cv2 import imread, imwrite
+    from cv2 import IMWRITE_PNG_COMPRESSION, IMWRITE_JPEG_QUALITY
+
     if not os.path.isfile(filepath):
         raise FileNotFoundError("image does not exist")
 
-    imagedata = cv2.imread(filepath)
+    imagedata = imread(filepath)
 
     if outputpath.endswith(".png"):
-        cv2.imwrite(outputpath, imagedata, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+        imwrite(outputpath, imagedata, [IMWRITE_PNG_COMPRESSION, 0])
     elif outputpath.endswith(".jpg"):
-        cv2.imwrite(outputpath, imagedata, [cv2.IMWRITE_JPEG_QUALITY, 200])
+        imwrite(outputpath, imagedata, [IMWRITE_JPEG_QUALITY, 200])
     else:
         raise ValueError("unsupported output type")
 
 def handle_geotiff(filename: str, bucket: str, logtraces: list):
     """
     A handler function that performs the asset handle runtime for GeoTIFF assets.
+
     Downloads the asset, converts it into a PNG, reuploads it and then 
     deletes the original GeoTIFF asset from a Cloud Storage Bucket.
     """
-    logtraces.append("started GeoTIFF asset handler")
+    from google.cloud import storage
+
+    logtraces.append("started GeoTIFF asset handler runtime")
 
     try:
         storage_client = storage.Client()
@@ -60,7 +64,7 @@ def handle_geotiff(filename: str, bucket: str, logtraces: list):
     logtraces.append("storage client and bucket handler initialized.")
 
     try:
-        tmpdir = "./tmp"
+        tmpdir = "/tmp"
         assetname = generate_assetname(filename)
         tmpfile = f"{tmpdir}/{assetname}"
 
@@ -106,5 +110,5 @@ def handle_geotiff(filename: str, bucket: str, logtraces: list):
         return "ERROR", "runtime error.", "error-acknowledge", logtraces
 
     logtraces.append("GeoTIFF blob deleted.")
-    logtraces.append("ended GeoTIFF asset handler")
-    return "INFO", "runtime complete", "success-acknowledge", logtraces
+    logtraces.append("ended GeoTIFF asset handler runtime")
+    return "INFO", "GeoTIFF runtime complete", "success-acknowledge", logtraces
