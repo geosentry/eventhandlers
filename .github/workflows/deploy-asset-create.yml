@@ -37,5 +37,6 @@ jobs:
             --entry-point main \
             --service-account ${{ env.SACCOUNT }} \
             --runtime python39 \
+            --memory 512MB \
             --trigger-event "${{ env.EVENT }}" \
             --trigger-resource "${{ env.RESOURCE }}"
