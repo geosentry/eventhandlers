@@ -1,7 +1,10 @@
-# Terrascope
-A geospatial data subscription service that sends spectral analytics and stunning visuals powered by Google Earth Engine to your email regularly.
+# Terrascope 🌍
 
-!todo - add link to deployed project
+A geospatial data service that offers spectral, topographical and comparative 
+analytics along with a community-curated gallery of stunning satellite imagery 
+powered by ESA's Sentinel-2 & Google Earth Engine.
+
+https://www.terrascope.web.app
 
 ## In Development
 **Version: 0.1.0**  
@@ -83,5 +86,5 @@ https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage
 - ?
 - emailgen lib
 
-## Front-End Interface
-- link to external repository
+## Frontend Repository
+https://www.github.com/manishmeganathan/terrascope-app
