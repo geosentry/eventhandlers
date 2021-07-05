@@ -83,9 +83,5 @@ def handle_png(filename: str, logtraces: list):
         return "ALERT", "system error.", "error-acknowledge", logtraces
     
     logtraces.append(f"asset document updated")
-    
-    # check if all document assets have been generated.
-    # send pubsub trigger to pdf-builds if true 
-
     logtraces.append("ended PNG asset handler runtime")
     return "INFO", "PNG runtime complete", "success-acknowledge", logtraces
