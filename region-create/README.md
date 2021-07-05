@@ -18,7 +18,7 @@ Trigger Resource: **regions/{region}**
 ### Function Flow  
 !todo  
 When a region document is created, make a HTTP call to an function that reshapes the GeoJSON string into a bounding box square. 
-Verify the subscription parameters and fallback to defaults if the dont exist.Update the 'geojson' field of the document and then publish either of the folllwing triggers to core-tasks topic based on the type of region. 
+Verify the subscription parameters and fallback to defaults if the dont exist.Update the 'geojson' field of the document and then publish either of the folllwing triggers to taskbuilds topic based on the type of region. 
 - If vis region, send a visbuild trigger.
 - If acq region, send a topobuild and an nltxbuild trigger along with 5 acqbuild triggers for each of the last 5 acquisition dates. 
 

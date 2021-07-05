@@ -15,7 +15,7 @@ Trigger Topic: **repeats**
 
 ### Function Flow  
 !todo  
-When an pubsub message is recieved, Query the **regions** collection for documents that have the 'next_acquisition' timestamp less than current UTC time. For each region document, publish either an acqbuild or visbuild trigger to the core-tasks topic
+When an pubsub message is recieved, Query the **regions** collection for documents that have the 'next_acquisition' timestamp less than current UTC time. For each region document, publish either an acqbuild or visbuild trigger to the taskbuilds topic
 
 ### Deployment
 All pushes to this directory automatically trigger a workflow to deploy the Cloud Function to a GCP Project.   

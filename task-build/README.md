@@ -7,7 +7,7 @@ Runtime: **go113** (Go 1.13)
 
 ### Trigger
 Trigger Type: **PubSub**  
-Trigger Topic: **core-tasks**  
+Trigger Topic: **taskbuilds**  
 
 ### Service Account Permissions
 - **Cloud Task ??** (Cloud Tasks)
@@ -31,5 +31,5 @@ gcloud functions deploy task-build \
 --service-account $SAEMAIL \
 --runtime go113 \
 --entry-point Main \
---trigger-topic core-tasks 
+--trigger-topic taskbuilds 
 ```
