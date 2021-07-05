@@ -146,7 +146,3 @@ xyz/
 # Pipfiles
 **/Pipfile
 **/Pipfile.lock
-
-# Terraform
-terraform/.terraform*
-terraform/terraform.*
