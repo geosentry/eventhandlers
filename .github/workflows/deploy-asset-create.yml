@@ -1,0 +1,50 @@
+# Workflow Name
+name: asset-create service deployer
+
+# Workflow Triggers
+on:
+  # Triggered on push to the asset-create directory
+  push:
+    paths:
+      - 'asset-create/**'
+
+  # Triggered on manual dispatch
+  workflow_dispatch:
+
+# Workflow Environment Variables
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+  SERVICE: asset-create
+  REGION: asia-south1
+  SACCOUNT: ${{ secrets.GCP_SA_ASSETHANDLER }}
+  EVENT: google.storage.object.finalize
+  RESOURCE: geosentry-assets
+
+# Workflow Jobs
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout Git Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Configure gcloud SDK
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+
+      # Run gcloud functions deploy
+      - name: Deploy Cloud Function
+        working-directory: ./asset-create
+        run: |
+          gcloud functions deploy ${{ env.SERVICE }} \
+            --region ${{ env.REGION }} \
+            --service-account ${{ env.SACCOUNT }} \
+            --runtime python39 \
+            --memory 512MB \
+            --entry-point main \
+            --trigger-event "${{ env.EVENT }}" \
+            --trigger-resource "${{ env.RESOURCE }}"
