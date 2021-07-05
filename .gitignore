@@ -141,6 +141,7 @@ tmp/
 # Devlopment
 testbench/
 keys/
+xyz/
 
 # Pipfiles
 **/Pipfile
