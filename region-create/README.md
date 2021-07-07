@@ -16,11 +16,15 @@ Trigger Resource: **regions/{region}**
 - **Cloud Function Invoker** (Cloud Functions)
 
 ### Function Flow  
-!todo  
-When a region document is created, make a HTTP call to an function that reshapes the GeoJSON string into a bounding box square. 
-Verify the subscription parameters and fallback to defaults if the dont exist.Update the 'geojson' field of the document and then publish either of the folllwing triggers to taskbuilds topic based on the type of region. 
-- If vis region, send a visbuild trigger.
-- If acq region, send a topobuild and an nltxbuild trigger along with 5 acqbuild triggers for each of the last 5 acquisition dates. 
+1. Obtain the path to the *region* document and the GCP project ID by parsing the event dictionary from the Firestore trigger.
+2. (TODO) Read the 'geojson' field of the *region* document and make a HTTP request to the GeoCore API's **/reshape** endpoint.
+3. (TODO) Update the 'geojson' field of the *region* document with the new reshaped GeoJSON data.
+4. Initialize the PubSub Client and Topic Handler.
+5. Determine the type of the *region* document from it's 'type' field.
+6. Publish a message to the **taskbuilds** topic based on the *region* document type. The messsage contains the document path of the document and the 'runtime' attribute is
+    - *new-vis-region* for 'vis-region' type.
+    - *new-acq-region* for 'user-region' type.
+7. Confirm the success of the publish and log the publish ID.
 
 ### Deployment
 All pushes to this directory automatically trigger a workflow to deploy the Cloud Function to a GCP Project.   
