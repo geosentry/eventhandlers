@@ -16,6 +16,8 @@ import (
 	"cloud.google.com/go/pubsub"
 )
 
+// A structure that represents a generic Region Document
+// Only implements fields relevant to this service.
 type RegionDoc struct {
 	Type struct {
 		StringValue string `json:"stringValue"`
