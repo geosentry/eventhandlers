@@ -1,0 +1,49 @@
+# Workflow Name
+name: region-create service deployer
+
+# Workflow Triggers
+on:
+  # Triggered on push to the region-create directory
+  push:
+    paths:
+      - 'region-create/**'
+
+  # Triggered on manual dispatch
+  workflow_dispatch:
+
+# Workflow Environment Variables
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT }}
+  SERVICE: region-create
+  REGION: asia-south1
+  SACCOUNT: ${{ secrets.GCP_SA_DOCHANDLER }}
+  EVENT: providers/cloud.firestore/eventTypes/document.create
+  RESOURCE: projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{region}
+
+# Workflow Jobs
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout Git Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      # Configure gcloud SDK
+      - name: Setup Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_CREDENTIALS }}
+
+      # Run gcloud functions deploy
+      - name: Deploy Cloud Function
+        working-directory: ./region-create
+        run: |
+          gcloud functions deploy ${{ env.SERVICE }} \
+            --region ${{ env.REGION }} \
+            --service-account ${{ env.SACCOUNT }} \
+            --runtime go113 \
+            --entry-point Main \
+            --trigger-event "${{ env.EVENT }}" \
+            --trigger-resource "${{ env.RESOURCE }}"
