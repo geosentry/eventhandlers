@@ -5,7 +5,7 @@ Google Cloud Platform - Cloud Functions
 
 asset-create service
 """
-from .logentry import LogEntry
+from pkg.logentry import LogEntry
 
 def main(event, context):
     """ Cloud Functions Entrypoint """
@@ -25,7 +25,7 @@ def main(event, context):
 
     try:
         if contenttype == "image/tiff":
-            from .geotiff import handle_geotiff
+            from pkg.geotiff import handle_geotiff
 
             severity, message, response = handle_geotiff(filename, bucket, log)
 
@@ -33,7 +33,7 @@ def main(event, context):
             return response, 200
 
         elif contenttype == "image/png":
-            from .png import handle_png
+            from pkg.png import handle_png
 
             severity, message, response = handle_png(filename, log)
 
@@ -49,3 +49,12 @@ def main(event, context):
         log.addtrace(f"execution broke - could not run {contenttype} runtime. {e}")
         log("ERROR", f"runtime error.")
         return "error-acknowledge", 200
+
+if __name__ == "__main__":
+    event = {
+        "bucket": "geosentry-assets",
+        "contentType": "image/tiff",
+        "name": "regions/testreg/2021-06-24/truecolor.tif"
+    }
+
+    main(event, 0)
