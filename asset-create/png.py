@@ -1,8 +1,9 @@
 """
-AssetLib Package
+asset-create service
 
 The png module contains functions to handle PNG assets triggers
 """
+from .logentry import LogEntry
 
 def generate_assetid(filename: str):
     """ A function that returns an asset ID for a given filename. """
@@ -30,7 +31,7 @@ def generate_assetdoc(filename: str):
     except Exception as e:
         raise NameError(e)
 
-def handle_png(filename: str, logtraces: list):
+def handle_png(filename: str, log: LogEntry):
     """
     A handler function that performs the asset handle runtime for PNG assets.
 
@@ -40,48 +41,48 @@ def handle_png(filename: str, logtraces: list):
     """
     from google.cloud import firestore
 
-    logtraces.append("started PNG asset handler runtime")
+    log.addtrace("started PNG asset handler runtime")
 
     try:
         docpath = generate_assetdoc(filename)
-        logtraces.append(f"asset document path generated. docpath - {docpath}")
+        log.addtrace(f"asset document path generated. docpath - {docpath}")
 
         db = firestore.Client()
-        logtraces.append(f"firestore client initialized")
+        log.addtrace(f"firestore client initialized")
 
         docref = db.document(docpath)
         docsnap = docref.get()
 
         if not docsnap.exists:
-            logtraces.append(f"execution broke - could not find asset document on database.")
-            return "CRITICAL", "runtime error.", "error-acknowledge", logtraces
+            log.addtrace(f"execution broke - could not find asset document on database.")
+            return "CRITICAL", "runtime error.", "error-acknowledge"
             
     except NameError as e:
-        logtraces.append(f"execution broke - could not generate asset document path from filename. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not generate asset document path from filename. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
 
     except TypeError as e:
-        logtraces.append(f"execution terminated - triggered by unsupported asset type - {e}")
-        return "INFO", "runtime terminated.", "termination-acknowledge", logtraces
+        log.addtrace(f"execution terminated - triggered by unsupported asset type - {e}")
+        return "INFO", "runtime terminated.", "termination-acknowledge"
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not initialize firestore client. {e}")
-        return "ALERT", "system error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not initialize firestore client. {e}")
+        return "ALERT", "system error.", "error-acknowledge"
 
-    logtraces.append(f"asset document path valudated.")
+    log.addtrace(f"asset document path valudated.")
 
     try:
         assetid = generate_assetid(filename)
         docref.set({f"asset-paths": {assetid: filename}}, merge=True)
 
     except NameError as e:
-        logtraces.append(f"execution broke - could not generate asset ID from filename. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not generate asset ID from filename. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
         
     except Exception as e:
-        logtraces.append(f"execution broke - could not update asset document. {e}")
-        return "ALERT", "system error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not update asset document. {e}")
+        return "ALERT", "system error.", "error-acknowledge"
     
-    logtraces.append(f"asset document updated")
-    logtraces.append("ended PNG asset handler runtime")
-    return "INFO", "PNG runtime complete", "success-acknowledge", logtraces
+    log.addtrace(f"asset document updated")
+    log.addtrace("ended PNG asset handler runtime")
+    return "INFO", "PNG runtime complete", "success-acknowledge"
