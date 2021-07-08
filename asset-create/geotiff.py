@@ -1,8 +1,9 @@
 """
-AssetLib Package
+asset-create service
 
 The geotiff module contains functions to handle GeoTIFF assets triggers
 """
+from .logentry import LogEntry
 
 def generate_assetname(filename: str) -> str:
     """ A function that returns an asset name for a given filename. """
@@ -42,7 +43,7 @@ def convert(filepath: str, outputpath: str):
     else:
         raise ValueError("unsupported output type")
 
-def handle_geotiff(filename: str, bucket: str, logtraces: list):
+def handle_geotiff(filename: str, bucket: str, log: LogEntry):
     """
     A handler function that performs the asset handle runtime for GeoTIFF assets.
 
@@ -51,17 +52,17 @@ def handle_geotiff(filename: str, bucket: str, logtraces: list):
     """
     from google.cloud import storage
 
-    logtraces.append("started GeoTIFF asset handler runtime")
+    log.addtrace("started GeoTIFF asset handler runtime")
 
     try:
         storage_client = storage.Client()
         bucket_handler = storage_client.bucket(bucket)
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not initialize storage client and bucket handler. {e}")
-        return "ALERT", "system error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not initialize storage client and bucket handler. {e}")
+        return "ALERT", "system error.", "error-acknowledge"
 
-    logtraces.append("storage client and bucket handler initialized.")
+    log.addtrace("storage client and bucket handler initialized.")
 
     try:
         tmpdir = "/tmp"
@@ -72,23 +73,23 @@ def handle_geotiff(filename: str, bucket: str, logtraces: list):
         tifblob.download_to_filename(f"{tmpfile}.tiff")
 
     except NameError as e:
-        logtraces.append(f"execution broke - could not generate asset name from filename. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not generate asset name from filename. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not download GeoTIFF blob. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not download GeoTIFF blob. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
 
-    logtraces.append("GeoTIFF blob downloaded.")
+    log.addtrace("GeoTIFF blob downloaded.")
 
     try:
         convert(f"{tmpfile}.tiff", f"{tmpfile}.png")
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not convert GeoTIFF to PNG. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not convert GeoTIFF to PNG. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
 
-    logtraces.append("GeoTIFF converted to PNG.")
+    log.addtrace("GeoTIFF converted to PNG.")
 
     try:
         outname = filename.split(".")[0] + ".png"
@@ -97,18 +98,18 @@ def handle_geotiff(filename: str, bucket: str, logtraces: list):
         pngblob.upload_from_filename(f"{tmpfile}.png")
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not upload PNG blob. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not upload PNG blob. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
 
-    logtraces.append("PNG blob uploaded.")
+    log.addtrace("PNG blob uploaded.")
 
     try:
         tifblob.delete()
         
     except Exception as e:
-        logtraces.append(f"execution broke - could not delete GeoTIFF blob. {e}")
-        return "ERROR", "runtime error.", "error-acknowledge", logtraces
+        log.addtrace(f"execution broke - could not delete GeoTIFF blob. {e}")
+        return "ERROR", "runtime error.", "error-acknowledge"
 
-    logtraces.append("GeoTIFF blob deleted.")
-    logtraces.append("ended GeoTIFF asset handler runtime")
-    return "INFO", "GeoTIFF runtime complete", "success-acknowledge", logtraces
+    log.addtrace("GeoTIFF blob deleted.")
+    log.addtrace("ended GeoTIFF asset handler runtime")
+    return "INFO", "GeoTIFF runtime complete", "success-acknowledge"
