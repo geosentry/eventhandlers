@@ -5,25 +5,11 @@ Google Cloud Platform - Cloud Functions
 
 asset-create service
 """
-import json
-
-servicename = "asset-create"
-
-def log(severity: str, message: str, trace: list):
-    """
-    A helper function that logs a given message to Cloud Logging as a structured log 
-    given that it is called within a Cloud Run/Function Service. The function accepts 
-    a log severity string, a log message string and a a list of trace log strings.
-
-    Accepted log severity values are - EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO, DEBUG and DEFAULT.
-    Refer to https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#logseverity for more information.
-    """
-    logentry = dict(severity=severity, message=message, trace=trace, service=servicename)
-    print(json.dumps(logentry))
+from .logentry import LogEntry
 
 def main(event, context):
     """ Cloud Functions Entrypoint """
-    logtraces = ["execution started"]
+    log = LogEntry()
 
     try:
         bucket = event["bucket"]
@@ -31,37 +17,35 @@ def main(event, context):
         contenttype = event["contentType"]
     
     except KeyError as e:
-        logtraces.append(f"execution broke - could not read bucket event data. missing key {e}")
-        log("EMERGENCY", f"system error.", logtraces)
+        log.addtrace(f"execution broke - could not read bucket event data. missing key {e}")
+        log.flush("EMERGENCY", f"system error.")
         return "error-acknowledge", 200
 
-    logtraces.append(f"event data read. bucket - {bucket}. filename - {filename}.")
+    log.addtrace(f"event data read. bucket - {bucket}. filename - {filename}.")
 
     try:
         if contenttype == "image/tiff":
-            import assetlib.geotiff as tif
+            from .geotiff import handle_geotiff
 
-            severity, message, response, logtraces = tif.handle_geotiff(filename, bucket, logtraces)
+            severity, message, response = handle_geotiff(filename, bucket, log)
 
-            logtraces.append("execution complete")
-            log(severity, message, logtraces)
+            log.flush(severity, message)
             return response, 200
 
         elif contenttype == "image/png":
-            import assetlib.png as png
+            from .png import handle_png
 
-            severity, message, response, logtraces = png.handle_png(filename, logtraces)
+            severity, message, response = handle_png(filename, log)
 
-            logtraces.append("execution complete")
-            log(severity, message, logtraces)
+            log.flush(severity, message)
             return response, 200
         
         else:
-            logtraces.append(f"execution terminated - triggered by unsupported object of type - {contenttype}.")
-            log("INFO", "runtime terminated.", logtraces)
+            log.addtrace(f"execution terminated - triggered by unsupported object of type - {contenttype}.")
+            log("INFO", "runtime terminated.")
             return "termination-acknowledge", 200
 
     except Exception as e:
-        logtraces.append(f"execution broke - could not run {contenttype} runtime. {e}")
-        log("ERROR", f"runtime error.", logtraces)
+        log.addtrace(f"execution broke - could not run {contenttype} runtime. {e}")
+        log("ERROR", f"runtime error.")
         return "error-acknowledge", 200
