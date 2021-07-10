@@ -16,7 +16,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
   SERVICE: region-create
   REGION: asia-south1
-  SACCOUNT: ${{ secrets.GCP_SA_DOCHANDLER }}
+  SACCOUNT: documenthandler@${{ secrets.GCP_PROJECT }}.iam.gserviceaccount.com
   EVENT: providers/cloud.firestore/eventTypes/document.create
   RESOURCE: projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{region}
 

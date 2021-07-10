@@ -16,7 +16,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
   SERVICE: asset-create
   REGION: asia-south1
-  SACCOUNT: ${{ secrets.GCP_SA_ASSETHANDLER }}
+  SACCOUNT: assethandler@${{ secrets.GCP_PROJECT }}.iam.gserviceaccount.com
   EVENT: google.storage.object.finalize
   RESOURCE: geosentry-assets
 
