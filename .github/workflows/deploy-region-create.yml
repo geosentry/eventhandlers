@@ -47,4 +47,4 @@ jobs:
             --entry-point Main \
             --trigger-event "${{ env.EVENT }}" \
             --trigger-resource "${{ env.RESOURCE }}" \
-            --set-env-vars GCP_PROJECT=${{ env.PROJECT_ID }}, GCP_REGION=${{ env.REGION }}
+            --set-env-vars GCP_PROJECT=${{ env.PROJECT_ID }},GCP_REGION=${{ env.REGION }}
