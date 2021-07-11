@@ -1,5 +1,5 @@
 # Workflow Name
-name: region-create service deployer
+name: region-create deploy
 
 # Workflow Triggers
 on:
@@ -16,7 +16,7 @@ env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT }}
   SERVICE: region-create
   REGION: asia-south1
-  SACCOUNT: documenthandler@${{ secrets.GCP_PROJECT }}.iam.gserviceaccount.com
+  SACCOUNT: invokehandler@${{ secrets.GCP_PROJECT }}.iam.gserviceaccount.com
   EVENT: providers/cloud.firestore/eventTypes/document.create
   RESOURCE: projects/${{ secrets.GCP_PROJECT }}/databases/(default)/documents/regions/{region}
 
@@ -45,5 +45,6 @@ jobs:
             --service-account ${{ env.SACCOUNT }} \
             --runtime go113 \
             --entry-point Main \
+            --set-env-vars GCP_PROJECT=${{ env.PROJECT_ID }}, GCP_REGION=${{ env.REGION }} \
             --trigger-event "${{ env.EVENT }}" \
             --trigger-resource "${{ env.RESOURCE }}"

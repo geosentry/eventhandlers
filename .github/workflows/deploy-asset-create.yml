@@ -1,5 +1,5 @@
 # Workflow Name
-name: asset-create service deployer
+name: asset-create deploy
 
 # Workflow Triggers
 on:
