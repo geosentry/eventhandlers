@@ -18,9 +18,6 @@ func Main(ctx context.Context, event FirestoreEvent) error {
 	// Defer the closing of cloud clients
 	defer runner.Close()
 
-	// Start the runner logger
-	runner.StartLogger()
-
 	// Setup the runner execution
 	cancel := runner.Setup(ctx, event)
 	runner.LogChan <- "execution setup complete."

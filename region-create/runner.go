@@ -78,10 +78,15 @@ type RegionCreate struct {
 
 // A method of RegionCreate that closes all cloud clients
 func (runner *RegionCreate) Close() {
-	// Close the Firestore Client
-	runner.DBClient.Close()
-	// Close the PubSub Client
-	runner.PubSubClient.Close()
+	if runner.DBClient != nil {
+		// Close the Firestore Client
+		runner.DBClient.Close()
+	}
+
+	if runner.PubSubClient != nil {
+		// Close the PubSub Client
+		runner.PubSubClient.Close()
+	}
 }
 
 // A method of RegionCreate that listens on the log and error channels
@@ -106,7 +111,6 @@ func (runner *RegionCreate) StartLogger() {
 
 		// Add execution break trace and return
 		case <-runner.ctx.Done():
-			runner.log.addtrace("execution broke.")
 			return
 		}
 	}
@@ -125,12 +129,22 @@ func (runner *RegionCreate) Setup(ctx context.Context, event FirestoreEvent) con
 	// Set the execution state
 	runner.Broken = false
 
+	// Create and set the error channel
+	runner.ErrChan = make(chan error)
+	// Create and set the log channel
+	runner.LogChan = make(chan string)
 	// Create and set the HTTP Client
 	runner.HTTPClient = &http.Client{}
+	// Create and set the waitgroup
+	runner.wg = &sync.WaitGroup{}
+
 	// Retrieve and set the project ID from the env variables
 	runner.ProjectID = os.Getenv("GCP_PROJECT")
 	// Retrieve and set the project region from the env variables
 	runner.ProjectRegion = os.Getenv("GCP_REGION")
+
+	// Start the runner logger
+	go runner.StartLogger()
 
 	// Return the context cancel function
 	return cancel
