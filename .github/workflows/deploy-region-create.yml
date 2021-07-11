@@ -45,6 +45,6 @@ jobs:
             --service-account ${{ env.SACCOUNT }} \
             --runtime go113 \
             --entry-point Main \
-            --set-env-vars GCP_PROJECT=${{ env.PROJECT_ID }} GCP_REGION=${{ env.REGION }} \
+            --set-env-vars [GCP_PROJECT=${{ env.PROJECT_ID }}, GCP_REGION=${{ env.REGION }}] \
             --trigger-event "${{ env.EVENT }}" \
             --trigger-resource "${{ env.RESOURCE }}"
