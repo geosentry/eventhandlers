@@ -17,41 +17,76 @@ import (
 	sdpb "google.golang.org/genproto/googleapis/cloud/servicedirectory/v1"
 )
 
+// A structure that represents the
+// runner for the region-create service
 type RegionCreate struct {
-	// Represents
+	// Represents the log entry of the runner
 	log *LogEntry
+	// Represents the context of the runner
 	ctx context.Context
-	wg  *sync.WaitGroup
+	// Represents the execution sync waitgroup
+	wg *sync.WaitGroup
 
-	ProjectID     string
+	// Represents the GCP Project ID
+	ProjectID string
+	// Represents the GCP Project Region
 	ProjectRegion string
-	Event         FirestoreEvent
+	// Represent the event trigger of the runner
+	Event FirestoreEvent
 
-	HTTPClient      *http.Client
-	GeoCoreURLs     map[string]string
+	// Represents the HTTP Client
+	HTTPClient *http.Client
+	// Represents the resolved service
+	// URLs of GeoCore API services
+	GeoCoreURLs map[string]string
+	// Represents the response of the GeoCore Reshape API
 	ReshapeResponse struct {
-		Bounds []float32          `json:"bounds"`
-		Areas  map[string]float32 `json:"areas"`
+		Bounds   []float32          `json:"bounds"`
+		Areas    map[string]float32 `json:"areas"`
+		Centroid struct {
+			Longitude float32 `json:"longitude"`
+			Latitude  float32 `json:"latitude"`
+		} `json:"centroid"`
+	}
+	// Represents the response of the GeoCore Geocode API
+	GeocodeResponse struct {
+		Geocode map[string]string `json:"geocode"`
 	}
 
-	DBClient         *firestore.Client
-	RegionDoc        *firestore.DocumentRef
+	// Represents the Firestore Client
+	DBClient *firestore.Client
+	// Represent the Document Reference of the Region Document
+	RegionDoc *firestore.DocumentRef
+	// Represents the Updates for the Region Document
 	RegionDocUpdates []firestore.Update
 
+	// Represents the PubSub Client
 	PubSubClient *pubsub.Client
-	BuildTopic   *pubsub.Topic
+	// Represents the taskbuilds PubSub Topic
+	BuildTopic *pubsub.Topic
+	// Represents the build PubSub Message
 	BuildMessage *pubsub.Message
 
-	Broken  bool
+	// Represents the execution state of the runner
+	// Is set to true when an error is encountered
+	Broken bool
+	// Represents the error channel of the runnner
 	ErrChan chan error
+	// Represents the log channel of the runner
 	LogChan chan string
 }
 
+// A method of RegionCreate that closes all cloud clients
 func (runner *RegionCreate) Close() {
+	// Close the Firestore Client
 	runner.DBClient.Close()
+	// Close the PubSub Client
 	runner.PubSubClient.Close()
 }
 
+// A method of RegionCreate that listens on the log and error channels
+// of the runner and modifies the log entry accordingly. The listen is
+// stopped when the runner context is cancelled.
 func (runner *RegionCreate) StartLogger() {
 	// Construct a new log entry and set it to the runner
 	runner.log = NewLogEntry("region-create")
@@ -69,7 +104,7 @@ func (runner *RegionCreate) StartLogger() {
 			runner.log.addtrace(fmt.Sprintf("error: %s.", err))
 			runner.Broken = true
 
-		// Add execution break and return
+		// Add execution break trace and return
 		case <-runner.ctx.Done():
 			runner.log.addtrace("execution broke.")
 			return
@@ -77,6 +112,9 @@ func (runner *RegionCreate) StartLogger() {
 	}
 }
 
+// A method of RegionCreate that sets up the basic execution parameters of the runner such
+// as the runnner context, state and event as well as project parameters retrieved from
+// environment variables. Returns a context cancel function for the runner context.
 func (runner *RegionCreate) Setup(ctx context.Context, event FirestoreEvent) context.CancelFunc {
 	// Create a cancellable context and set it to the runner
 	cntx, cancel := context.WithCancel(ctx)
@@ -84,6 +122,9 @@ func (runner *RegionCreate) Setup(ctx context.Context, event FirestoreEvent) con
 
 	// Set the event data
 	runner.Event = event
+	// Set the execution state
+	runner.Broken = false
+
 	// Create and set the HTTP Client
 	runner.HTTPClient = &http.Client{}
 	// Retrieve and set the project ID from the env variables
@@ -95,6 +136,8 @@ func (runner *RegionCreate) Setup(ctx context.Context, event FirestoreEvent) con
 	return cancel
 }
 
+// A method of RegionCreate that sets up the
+// Firestore client and region document reference
 func (runner *RegionCreate) SetupDB() {
 	// Defer the completion for the waitgroup
 	defer runner.wg.Done()
@@ -114,6 +157,8 @@ func (runner *RegionCreate) SetupDB() {
 	runner.RegionDocUpdates = make([]firestore.Update, 0)
 }
 
+// A method of RegionCreate that sets up the PubSub client
+// as well as the build topic and message for the region
 func (runner *RegionCreate) SetupPubSub() {
 	// Defer the completion for the waitgroup
 	defer runner.wg.Done()
@@ -152,6 +197,9 @@ func (runner *RegionCreate) SetupPubSub() {
 	}
 }
 
+// A method of RegionCreate that resolves the GeoCore API service URLs
+// by looking them up on the Service Directory. Adds the relevant service
+// URLs to the runner's GeoCoreURLs map.
 func (runner *RegionCreate) ResolveGeoCoreService() {
 	// Defer the completion for the waitgroup
 	defer runner.wg.Done()
@@ -186,6 +234,8 @@ func (runner *RegionCreate) ResolveGeoCoreService() {
 	}
 }
 
+// A method of RegionCreate that makes a HTTP request to the GeoCore
+// Reshape API with the geojson data from the region document.
 func (runner *RegionCreate) Reshape() {
 	// Retrieve the data of the 'geojson' field from the event data
 	geojson := runner.Event.Value.Fields.GeoJSON.StringValue
@@ -233,8 +283,18 @@ func (runner *RegionCreate) Reshape() {
 	json.Unmarshal(responsebody, &runner.ReshapeResponse)
 }
 
-func (runner *RegionCreate) Geocode() {}
+// TODO:
+// A method of RegionCreate that makes a HTTP request to the GeoCore
+// Geocode API with the centroid of the region obtained from the Reshape API.
+func (runner *RegionCreate) Geocode() {
+	// construct request object with centroid data
+	// retrieve idtoken from computemeta api for geocode and set auth header
+	// make HTTP request to geocode and collect response data
+	// add geocode data to the region document
+}
 
+// A method of RegionCreate that reshapes the region and retrieves the geocoding information
+// of the region document and updates the document with the neccessary fields
 func (runner *RegionCreate) Update() {
 	// Defer the completion for the waitgroup
 	defer runner.wg.Done()
@@ -246,12 +306,6 @@ func (runner *RegionCreate) Update() {
 	// Get Geocoding Data of the Region
 	// runner.Geocode()
 	// runner.LogChan <- "region geocode complete."
-
-	// TODO: geocoding
-	// construct request object with centroid data
-	// retrieve idtoken from computemeta api for geocode and set auth header
-	// make HTTP request to geocode and collect response data
-	// add geocode data to the region document
 
 	// Accumulate updates for the region document
 	runner.RegionDocUpdates = append(
@@ -268,6 +322,8 @@ func (runner *RegionCreate) Update() {
 	runner.LogChan <- "region update complete."
 }
 
+// A method of RegionCreate that publishes the build
+// task for the region document to a PubSub topidc
 func (runner *RegionCreate) Publish() {
 	// Publish the build message to the topic
 	result := runner.BuildTopic.Publish(runner.ctx, runner.BuildMessage)
