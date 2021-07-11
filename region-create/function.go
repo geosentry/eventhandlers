@@ -9,6 +9,7 @@ package regioncreate
 
 import (
 	"context"
+	"fmt"
 )
 
 // Cloud Functions Entrypoint
@@ -36,6 +37,7 @@ func Main(ctx context.Context, event FirestoreEvent) error {
 		runner.log.flush("ALERT", "runtime error")
 		return nil
 	}
+	runner.LogChan <- fmt.Sprintf("document: %s", runner.RegionDoc.ID)
 	runner.LogChan <- "db setup and service resolve complete."
 
 	runner.wg.Add(2)
