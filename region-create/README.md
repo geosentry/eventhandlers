@@ -16,15 +16,15 @@ Trigger Resource: **regions/{region}**
 - **Cloud Function Invoker** (Cloud Functions)
 
 ### Function Flow  
-1. Obtain the path to the *region* document and the GCP project ID by parsing the event dictionary from the Firestore trigger.
-2. (TODO) Read the 'geojson' field of the *region* document and make a HTTP request to the GeoCore API's **/reshape** endpoint.
-3. (TODO) Update the 'geojson' field of the *region* document with the new reshaped GeoJSON data.
-4. Initialize the PubSub Client and Topic Handler.
-5. Determine the type of the *region* document from it's 'type' field.
-6. Publish a message to the **taskbuilds** topic based on the *region* document type. The messsage contains the document path of the document and the 'runtime' attribute is
+1. Create the function runner, setup its execution and start the logger.
+2. Setup the Firestore Client and the Document Reference for the *region* document.
+3. Resolve the GeoCorce Service APIs and obtain the URLs for the **Reshape** and **Geocode** APIs.
+4. Make HTTP requests to **Reshape** and **Geocode** APIs. Update the *region* document.
+4. Setup the PubSub Client, Topic Handler and Build Message. 
+5. Publish a message to the **taskbuilds** topic based on the *region* document type. The messsage contains the document path of the document and the 'runtime' attribute is
     - *new-vis-region* for 'vis-region' type.
-    - *new-acq-region* for 'user-region' type.
-7. Confirm the success of the publish and log the publish ID.
+    - *new-acq-region* for 'acq-region' type.
+6. Confirm the success of the publish and log the publish ID.
 
 ### Deployment
 All pushes to this directory automatically trigger a workflow to deploy the Cloud Function to a GCP Project.   
@@ -39,4 +39,5 @@ gcloud functions deploy region-create \
 --entry-point Main \
 --trigger-event providers/cloud.firestore/eventTypes/document.create
 --trigger-resource projects/$PROJECTID/databases/(default)/documents/regions/{region}
+--set-env-vars GCP_PROJECT=$PROJECTID,GCP_REGION=$REGION
 ```
