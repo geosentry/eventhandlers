@@ -1,4 +1,4 @@
-package function
+package regioncreate
 
 import (
 	"encoding/json"
@@ -17,9 +17,9 @@ type LogEntry struct {
 }
 
 // A constructor function that generates a base LogEntry and returns it.
-func NewLogEntry() *LogEntry {
+func NewLogEntry(service string) *LogEntry {
 	// Create a new logentry object
-	log := LogEntry{Service: "region-create", Trace: []string{"execution started"}}
+	log := LogEntry{Service: service, Trace: []string{"execution started"}}
 	// Return the new logentry object
 	return &log
 }

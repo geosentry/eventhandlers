@@ -1,4 +1,4 @@
-module github.com/geosentry/eventhandlers/region-create
+module github.com/geosentry/eventhandlers/regioncreate
 
 go 1.16
 
