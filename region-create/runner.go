@@ -251,12 +251,14 @@ func (runner *RegionCreate) ResolveGeoCoreService() {
 // A method of RegionCreate that makes a HTTP request to the GeoCore
 // Reshape API with the geojson data from the region document.
 func (runner *RegionCreate) Reshape() {
-	// Retrieve the data of the 'geojson' field from the event data
-	geojson := runner.Event.Value.Fields.GeoJSON.StringValue
+	// Retrieve the URL for the Reshape API
 	url := runner.GeoCoreURLs["reshape"]
 
+	// Retrieve the data of the 'geojson' field from the event data
+	geojson := runner.Event.Value.Fields.GeoJSON.StringValue
 	// Construct the request body with the geojson data to reshape
 	var requestbody = []byte(fmt.Sprintf(`{"geojson": %s}`, geojson))
+
 	// Construct the request object
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(requestbody))
 	if err != nil {
@@ -264,18 +266,17 @@ func (runner *RegionCreate) Reshape() {
 		return
 	}
 
-	// Set the Content-Type and User-Agent headers of the request
-	request.Header.Set("User-Agent", "region-create cloud function")
-	request.Header.Set("Content-Type", "application/json")
-
 	// Retrieve authentication token from the GCP Compute Metadata API
 	tokenurl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", url)
 	token, err := metadata.Get(tokenurl)
 	if err != nil {
-		runner.ErrChan <- fmt.Errorf("could not build reshape request body")
+		runner.ErrChan <- fmt.Errorf("could not retrieve auth token for reshape service")
 		return
 	}
 
+	// Set the Content-Type and User-Agent headers of the request
+	request.Header.Set("User-Agent", "region-create cloud function")
+	request.Header.Set("Content-Type", "application/json")
 	// Set the Authorization Header of the request
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
@@ -297,14 +298,58 @@ func (runner *RegionCreate) Reshape() {
 	json.Unmarshal(responsebody, &runner.ReshapeResponse)
 }
 
-// TODO:
 // A method of RegionCreate that makes a HTTP request to the GeoCore
 // Geocode API with the centroid of the region obtained from the Reshape API.
 func (runner *RegionCreate) Geocode() {
-	// construct request object with centroid data
-	// retrieve idtoken from computemeta api for geocode and set auth header
-	// make HTTP request to geocode and collect response data
-	// add geocode data to the region document
+	// Retrieve the URL for the Reshape API
+	url := runner.GeoCoreURLs["geocode"]
+
+	// Retrieve the data of the centroid coordinates from the reshape response
+	coordinates, err := json.Marshal(runner.ReshapeResponse.Centroid)
+	if err != nil {
+		runner.ErrChan <- fmt.Errorf("could not marshal centroid data")
+		return
+	}
+	// Construct the request body with the coordinate data
+	var requestbody = []byte(fmt.Sprintf(`{"coordinates": %s}`, coordinates))
+
+	// Construct the request object
+	request, err := http.NewRequest("POST", url, bytes.NewBuffer(requestbody))
+	if err != nil {
+		runner.ErrChan <- fmt.Errorf("could not build geocode request body")
+		return
+	}
+
+	// Retrieve authentication token from the GCP Compute Metadata API
+	tokenurl := fmt.Sprintf("/instance/service-accounts/default/identity?audience=%s", url)
+	token, err := metadata.Get(tokenurl)
+	if err != nil {
+		runner.ErrChan <- fmt.Errorf("could not retrieve auth token for geocode service")
+		return
+	}
+
+	// Set the Content-Type and User-Agent headers of the request
+	request.Header.Set("User-Agent", "region-create cloud function")
+	request.Header.Set("Content-Type", "application/json")
+	// Set the Authorization Header of the request
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	// Perform the HTTP request
+	response, err := runner.HTTPClient.Do(request)
+	if err != nil {
+		runner.ErrChan <- fmt.Errorf("could not post geocode request")
+		return
+	}
+	defer response.Body.Close()
+	// Read the response data
+	responsebody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		runner.ErrChan <- fmt.Errorf("could not read geocode response")
+		return
+	}
+
+	// Unmarshall response into a ReshapeResponse
+	json.Unmarshal(responsebody, &runner.GeocodeResponse)
 }
 
 // A method of RegionCreate that reshapes the region and retrieves the geocoding information
@@ -318,8 +363,8 @@ func (runner *RegionCreate) Update() {
 	runner.LogChan <- "region reshape complete."
 
 	// Get Geocoding Data of the Region
-	// runner.Geocode()
-	// runner.LogChan <- "region geocode complete."
+	runner.Geocode()
+	runner.LogChan <- "region geocode complete."
 
 	// Accumulate updates for the region document
 	runner.RegionDocUpdates = append(
@@ -327,8 +372,8 @@ func (runner *RegionCreate) Update() {
 		firestore.Update{Path: "geojson", Value: firestore.Delete},
 		firestore.Update{Path: "bounds", Value: runner.ReshapeResponse.Bounds},
 		firestore.Update{Path: "areas", Value: runner.ReshapeResponse.Bounds},
-		// firestore.Update{Path: "centroid", Value: runner.ReshapeResponse.Centroid},
-		// firestore.Update{Path: "geocode", Value: runner.GeocodeResponse},
+		firestore.Update{Path: "centroid", Value: runner.ReshapeResponse.Centroid},
+		firestore.Update{Path: "geocode", Value: runner.GeocodeResponse.Geocode},
 	)
 
 	// Update the region document to Firestore.
@@ -348,5 +393,6 @@ func (runner *RegionCreate) Publish() {
 		runner.ErrChan <- fmt.Errorf("could not publish build message. %s", err)
 		return
 	}
+	// Log the publish ID
 	runner.LogChan <- fmt.Sprintf("pubsub message published. publish ID - %s", id)
 }
