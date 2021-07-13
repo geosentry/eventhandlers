@@ -371,7 +371,7 @@ func (runner *RegionCreate) Update() {
 		runner.RegionDocUpdates,
 		firestore.Update{Path: "geojson", Value: firestore.Delete},
 		firestore.Update{Path: "bounds", Value: runner.ReshapeResponse.Bounds},
-		firestore.Update{Path: "areas", Value: runner.ReshapeResponse.Bounds},
+		firestore.Update{Path: "areas", Value: runner.ReshapeResponse.Areas},
 		firestore.Update{Path: "centroid", Value: runner.ReshapeResponse.Centroid},
 		firestore.Update{Path: "geocode", Value: runner.GeocodeResponse.Geocode},
 	)
