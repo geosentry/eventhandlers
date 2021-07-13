@@ -50,7 +50,7 @@ type RegionCreate struct {
 	}
 	// Represents the response of the GeoCore Geocode API
 	GeocodeResponse struct {
-		Geocode map[string]string `json:"geocode"`
+		Geocode string `json:"geocode"`
 	}
 
 	// Represents the Firestore Client
